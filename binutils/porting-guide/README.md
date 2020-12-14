@@ -5,46 +5,44 @@
 
 > Permission is granted to copy, distribute and/or modify this document
 > under the terms of the GNU Free Documentation License, Version 1.3 or
-> any later version published by the Free Software Foundation; with no 
+> any later version published by the Free Software Foundation; with no
 > Invariant Sections, with no Front-Cover Texts, and with no Back-Cover
 > Texts. A copy of the license is included in the section entitled.
 > GNU Free Documentation License.
 
-`* Title   : Binutils Porting Guide To A New Target Architecture
-* Created : 22 Sep 2009
-* Modified: 03 Nov 2009->01 Dec 2009
-* Version:  1.1
-* Contact : MR.Swami.Reddy@nsc.com`
+```
+* Title    : Binutils Porting Guide To A New Target Architecture
+* Created  : 22 Sep 2009
+* Modified : 03 Nov 2009->01 Dec 2009
+* Version  :  1.1
+* Contact  : MR.Swami.Reddy@nsc.com
+````
 
 ## Index
+```
 1. To whom this guide is useful (Who are the intended readers)
     1.1. Rationale
     1.2. Target Audience
     1.3. Further Sources of Information
-
 2. Introduction to binutils
-   2.1. Binutils File Organization structure:
-   2.2. Main Functional Areas and Data Structures
+    2.1. Binutils File Organization structure:
+    2.2. Main Functional Areas and Data Structures
         2.2.1 Binary File Description (BFD)
-        2.2.2 Opcodes
+        2.2.2 Opcodes        
         2.2.3 Include
         2.2.4 Binutils
         2.2.5 Gas
         2.2.6 ld
-
 3. Build and test
-   3.1 Build binutils tools
-   3.2 Test binutils tools
-
+    3.1 Build binutils tools
+    3.2 Test binutils tools
 4. Documentation
-
 5. About the author
+```
 
 ## Chapter 1. Introduction
 
-This document complements the existing documentation for binutils.  It is intended to help software engineers who want to port the binutils
-tools to a new hardware architecture for first time.
-This document is based on the author's experience to date.  It will be updated in future issues.  Suggestions for improvements are always welcome.
+This document complements the existing documentation for binutils.  It is intended to help software engineers who want to port the binutils tools to a new hardware architecture for first time. This document is based on the author's experience to date.  It will be updated in future issues.  Suggestions for improvements are always welcome.
 
 ### 1.1. Rationale
 
@@ -124,81 +122,82 @@ internally as well as in other projects.  For example the BFD library
 is used in GNU GDB debugger.  These libraries have their own top level
 directories.  The main directories are:
 
-                         binutils
-                            |
-                            |
-    ----------------------------------------------------------
-   |       |     |       |      |       |   |     |     |     |
-   |       |     |       |      |       |   |     |     |     |
- include  bfd  opcodes  cpu  binutils  gas  ld  gprof  gold  elfcpp
-
+```
+                              binutils
+                                 |
+                                 |
+   ----------------------------------------------------------------
+   |       |     |        |      |       |    |     |      |      |
+   |       |     |        |      |       |    |     |      |      |
+ include   bfd   opcodes  cpu  binutils  gas   ld  gprof   gold  elfcpp
+```
 
 Here is some brief information on the above directories:
 
- - include:
+ - **include:**
    Header files for information which straddles major components.
    For example the main simulator interface header is here
    (remote-sim.h), because it links GDB (in directory gdb) to the
    simulators (in directory sim).  Other headers, specific to a
    particular component reside in the directory of that component.
 
- - bfd:
+ - **bfd:**
    The Binary File Descriptor library.  This library contains code to
    handle specific binary file formats, such as ELF, COFF, SREC and so
    on.  If a new object file type must be recognized, code to support
    it should be added here.
 
- - opcodes:
+ - **opcodes:**
    The opcodes library.  This contains information on how to assemble
    and disassemble instructions.  
 
- - cpu:
+ - **cpu:**
    Source files for a utility called CGEN.  This is a tool which can
    be used to automatically generated target specific source files for
    the opcodes library as well as for the SIM simulator used by GDB.
-   
- - binutils: 
+
+ - **binutils:**
    Despite its name this is not the main binutils directory.  Rather
    it is the directory for all of the binutils tools which do not have
    their own top level source directory.  This includes tools such as
    objcopy, objdump and readelf amongst others.
 
- - gas: 
+ - **gas:**
    The GNU assembler.  Target specific assembler code is held in the
    config sub-directory.
 
- - ld:
+ - **ld:**
    The GNU linker.  Target specific linker files are held in
    sub-directories.
 
- - gprof:
+ - **gprof:**
    The GNU profiler.  This program does not have any target specific
    code.
 
- - gold:
+ - **gold:**
    The new GNU linker.  This is a new linker being created to replace
    LD.  At the moment it is still in development.
 
- - elfccp:
+ - **elfccp:**
    Elfcpp is a C++ library for reading and writing ELF information.
    It is currently only used by the GOLD linker.
 
 In addition there are a couple of other directories which can be found
 at the top level of a binutils source release.  They are used in the
 binutils build process, but they are not part of the binutils project:
-   
- - intl: 
+
+ - **intl:**
    GNU gettext library from gettext.
-   
- - libiberty: 
-   Before POSIX and glibc, this was a GNU project to provide a set 
+
+ - **libiberty:**
+   Before POSIX and glibc, this was a GNU project to provide a set
    of standard functions. It lives on in binutils.  Most valuable are
    its free store management and argument parsing functions.
 
 
-2.2. Main Functional Areas and Data Structures
+### 2.2. Main Functional Areas and Data Structures
 
-2.2.1. Binary File Description (BFD)
+#### 2.2.1. Binary File Description (BFD)
 
 BFD is a package which allows applications to use the same routines to
 operate on object files whatever the object file format.  A new object
@@ -216,6 +215,7 @@ In the case of the Compact-RISC, 16-bit implementation (which may be a
 COFF or ELF binary), the enumerated constant is bfd_cr16_arch.  This
 can be used to access various structures, for example:
 
+```c
   const bfd_arch_info_type bfd_cr16_arch =
     {
       16,               /* 16 bits in a word.  */
@@ -228,14 +228,14 @@ can be used to access various structures, for example:
       1,                /* Section alignment power.  */
       TRUE,             /* True if this is the default machine for the architecture.  */
       bfd_default_compatible, /* Function to call to determine if two different architectures are compatible.  */
-      bfd_default_scan, /* Function to call to determine if a given string matches this architecture.  */ 
+      bfd_default_scan, /* Function to call to determine if a given string matches this architecture.  */
       NULL,             /* Pointer to the next CR16 machine architecture.  */
     };
-
+```
 This particular structure is defined in a file called cpu-<target>.c
 in the bfd directory.
 
-The file <file_format>-<target>.c (eg: elf32-cr16.c) is used to
+The file `<file_format>-<target>.c` (eg: `elf32-cr16.c`) is used to
 provide target specific support for the given file format and
 architecture.  At the very least it provides the following
 information:
@@ -245,7 +245,7 @@ information:
 
 2. A reloc_howto_type array with target specific relocations details.
    Here is an example array entry from the cr16 port:
-   
+```c   
   (R_CR16_NONE,              /* Type.  */
    0,                        /* Rightshift.  */
    2,                        /* Size.  */
@@ -259,216 +259,221 @@ information:
    0,                        /* Src_mask */
    0,                        /* Dst_mask */
    FALSE),                   /* PCREL_offset */
-
+```
 
 3. Define the macros below with settings specific to the target:
 
-#define TARGET_LITTLE_SYM 
+```c
+#define TARGET_LITTLE_SYM
 #define TARGET_LITTLE_NAME
 
-#define ELF_ARCH         
-#define ELF_MACHINE_CODE 
-#define ELF_MAXPAGESIZE  
-#define elf_symbol_leading_char 
+#define ELF_ARCH
+#define ELF_MACHINE_CODE
+#define ELF_MAXPAGESIZE
 
-#define elf_info_to_howto              
-#define elf_info_to_howto_rel         
-
-#define elf_backend_relocate_section 
-#define elf_backend_gc_mark_hook 
-#define elf_backend_gc_sweep_hook 
+#define elf_symbol_leading_char
+#define elf_info_to_howto
+#define elf_info_to_howto_rel
+#define elf_backend_relocate_section
+#define elf_backend_gc_mark_hook
+#define elf_backend_gc_sweep_hook
 #define elf_backend_can_gc_sections  
-#define elf_backend_rela_normal     
+#define elf_backend_rela_normal
 #define elf_backend_check_relocs   
 #define elf_backend_final_write_processing
-#define elf_backend_object_p 
+#define elf_backend_object_p
 #define elf_backend_create_dynamic_sections
-#define elf_backend_adjust_dynamic_symbol 
-#define elf_backend_size_dynamic_sections 
-#define elf_backend_omit_section_dynsym 
-#define elf_backend_finish_dynamic_sections 
+#define elf_backend_adjust_dynamic_symbol
+#define elf_backend_size_dynamic_sections
+#define elf_backend_omit_section_dynsym
+#define elf_backend_finish_dynamic_sections
 #define elf_backend_reloc_type_class  
-#define elf_backend_want_got_plt     
-#define elf_backend_plt_readonly    
+#define elf_backend_want_got_plt
+#define elf_backend_plt_readonly
 #define elf_backend_want_plt_sym   
-#define elf_backend_got_header_size 
+#define elf_backend_got_header_size
 
-#define bfd_elf32_bfd_reloc_type_lookup 
-#define bfd_elf32_bfd_reloc_name_lookup 
-#define bfd_elf32_bfd_relax_section 
-#define bfd_elf32_bfd_get_relocated_section_contents 
+#define bfd_elf32_bfd_reloc_type_lookup
+#define bfd_elf32_bfd_reloc_name_lookup
+#define bfd_elf32_bfd_relax_section
+#define bfd_elf32_bfd_get_relocated_section_contents
 #define bfd_elf32_bfd_merge_private_bfd_data
-#define bfd_elf32_bfd_link_hash_table_create 
-#define bfd_elf32_bfd_link_hash_table_free 
-
+#define bfd_elf32_bfd_link_hash_table_create
+#define bfd_elf32_bfd_link_hash_table_free
+```
 
 In addition the files archures.c, config.bfd, Makefile.am and target.c
 in the bfd directory should be updated with any necessary target specific
 changes.
 
 
-2.2.2  Opcodes:
+#### 2.2.2  Opcodes:
 
 The opcodes directory should have at least 2 target specific files.
 One for assembling the target instructions and other for
 dis-assembling them.  The file names are:
 
- 1. <target>-opc.c and <target>-opc.h (header files are optional)
- 2. <target>-dis.c and <target>-dis.h (header files are optional)
+ 1. `<target>-opc.c` and `<target>-opc.h` (header files are optional)
+ 2. `<target>-dis.c` and `<target>-dis.h` (header files are optional)
 
-The <target>-dis.c files includes code to print disassembled
+The `<target>-dis.c` files includes code to print disassembled
 instructions and also code for matching opcodes and operands
 appropriately.
 
-The configure.in, disassemble.c and Makefile,am files in the opcodes
+The `configure.in`, `disassemble.c` and `Makefile.am` files in the opcodes
 directory also need to have targets specific changes made to them.
 
 
-2.2.3 Include:
+#### 2.2.3 Include:
 
 The include directory contains target specific header files, usually
 in a file format specific sub-directory.  Opcode information is
 normally held in a target specific file in the opcode sub-directory.
 For example:
 
-  include/elf/cr16.h
-  include/opcode/cr16.h
+```c
+include/elf/cr16.h
+include/opcode/cr16.h
+```
 
-
-2.2.4 Binutils:
+#### 2.2.4 Binutils:
 
 This directory doesn't require any new target specific files.  But the
-configure.tgt, Makefile.am an readelf.c files should be updated with
+`configure.tgt`, `Makefile.am` an `readelf.c` files should be updated with
 any target specific information needed.
 
 
-2.2.5 Gas:
+#### 2.2.5 Gas:
 
-The gas/config sub-directory contains the target specific files for
+The **`gas/config`** sub-directory contains the target specific files for
 the assembler.  The file names are:
 
-        tc-<target>.c
-        tc-<target>.h.
+```
+	tc-<target>.c
+	tc-<target>.h.
+```
 
 The above file should include:
 
-         - Sizes of(ie macros defines):
-              - Registers
-              - Instructions (ie maximum size)
-              - Operands
-         - Operand error types                
-         - Comment character used in assembly code.
-         - Comment character used in assembly code line.
-         - Line separator
 
-         - Defining the target specific
-              - multi-character options, if any.
-              - Process machine-dependent command line options in 
-                "md_parse_option" function.
-              - Include Machine-dependent usage-output in 
-                "md_show_usage" function.
+- Sizes of(ie macros defines):
+    - Registers
+    - Instructions (ie maximum size)
+    - Operands
+- Operand error types                
+- Comment character used in assembly code.
+- Comment character used in assembly code line.
+- Line separator
 
-         - Redefine the assemble directive using "md_pseudo_table".
-         - Functions for getting registers along with type, size,
-           and other information.
-         - md_begin function used to initialize/set-up all the tables, etc 
-           that are machine-dependent items of the assembler.
-         - Parse functions:
-             - parse_insn
-             - parse_operands
-             - parse_operand
-         - Print functions:
-             - print_insn
-             - print_operand
-             - print_operands
-         - Print functions:
-         - Function to assemble a single instruction "assemble_insn"
-         - md_assemble is the first function called to assemble instruction.
+- Defining the target specific
+    - multi-character options, if any.
+    - Process machine-dependent command line options in `md_parse_option` function.
+    - Include Machine-dependent usage-output in `md_show_usage` function.
 
+- Redefine the assemble directive using "md_pseudo_table".
+- Functions for getting registers along with type, size, and other information.
+- md_begin function used to initialize/set-up all the tables, etc that are machine-dependent items of the assembler.
+- Parse functions:
+    - parse_insn
+    - parse_operands
+    - parse_operand
+- Print functions:
+    - print_insn
+    - print_operand
+    - print_operands
+- Print functions:
+- Function to assemble a single instruction `assemble_insn`"
+- `md_assemble` is the first function called to assemble instruction.
 
-In the gas directory itself the configure.tgt and Makefile.am files
+In the gas directory itself the `configure.tgt` and `Makefile.am` files
 need to be modified to refer to the new files and to add support for
 the new target.         
 
 
-2.2.6 ld:
-In scripttempl/<format><target>.sc define the default linker script
+#### 2.2.6 ld:
+In `scripttempl/<format><target>.sc` define the default linker script
 file for the architecture.
 
-In emulparams/<target><format>.em define the default emulation script
+In `emulparams/<target><format>.em` define the default emulation script
 file.  This contains any functions necessary to customise the
 behaviour of the linker.
 
-In emulparams/<format><target>.sh define any parameters that can be
+In `emulparams/<format><target>.sh` define any parameters that can be
 used to modify the default linker script file.
 
 
 In the ld directory itself the configure.tgt file needs to be updated
-to add your new target information and the Makefile.am with new target
+to add your new target information and the` Makefile.am` with new target
 information build rules.
-  
 
-Chapter 3. Build and test
 
-3.1 Build binutils tools
+## Chapter 3. Build and test
+
+### 3.1 Build binutils tools
 Building binutils tools requires below steps as below:
 
-   - Configure:
-     Run configure script with target and prefix options.  For ex:
-   
+- **Configure:** Run configure script with target and prefix options.  For ex:
+
+```sh
       > src/configure --target=cr16-elf --prefix=/local/cr16-bintuils
         Here, target -> target you want to build the binutils tools.
               prefix -> Built binutils tools installation location/directory.
+```
+- **Build:** Run `make` to build the binutils tools for the above configured target. For ex:
 
-   - Build:
-     Run "make" to build the binutils tools for the above configured target.  
-     For ex:
+```sh
       > make all
       > make install
-          or
+```
+or
+
+```sh
       > make all install
+```
 
-   NOTE: With "make" -jN option shall used to build the tools quickly 
-         by using all processors/CPUs on you host PC. For example, 
-         if your host PC has 4 procesors, then "make -j4" could be 
-         used for quick build. 
+**NOTE:** With `make -jN` option shall used to build the tools quickly
+          by using all `processors/CPUs` on you host PC. For example,
+          if your host PC has 4 procesors, then `make -j4` could be
+          used for quick build.
 
-3.2 Test binutils tools
+### 3.2 Test binutils tools
 
-To test above built tools using the binutils test suites like gas, 
-binutls and ld test suites.  Running the binutils testsuite requires 
-that the DejaGNU package (http://www.gnu.org/software/dejagnu/) required 
-and the DEJAGNU environment variable need to be set.  The tests can 
+To test above built tools using the binutils test suites like gas,
+binutls and ld test suites.  Running the binutils testsuite requires
+that the DejaGNU package (http://www.gnu.org/software/dejagnu/) required
+and the DEJAGNU environment variable need to be set.  The tests can
 then be run with:
-
+```sh
      > make check
-
+```
 The above command runs the binutils, gas and linker testsuites.
-   
+
 With the commands below the user can run the binutils, gas and linker
 testsuites separately:
 
+```sh
    > make check-binutils   
    > make check-gas
    > make check-ld
+```
+
 
 On completion of the binutils test run, a summary of the results will
 be in the binutils directory in the binutils.sum file.  More detailed
-information will also be available in the binutils/binutils.log file.
-For the gas testsuite the results are in the gas/testsuite/gas.sum and
+information will also be available in the `binutils/binutils.log` file.
+For the gas testsuite the results are in the `gas/testsuite/gas.sum` and
 gas/testsuite/gas.log files and for the linker testsuite they are in
-the ld/ld.sum and ld/ld.log files.
+the `ld/ld.sum` and `ld/ld.log` files.
 
 For the most comprehensive tests in an environment where host and
 target differ, DejaGNU needs some additional configuration.  This can
 be achieved by setting the DEJAGNU environment variable to refer to a
 suitable configuration file, and defining a custom board configuration
-file in the directory ~/boards.  These configuration files can be used
+file in the directory `~/boards`.  These configuration files can be used
 to specify a suitable simulator and how to connect it when running
 tests.
 
-
-Chapter 4. Documentation
+## Chapter 4. Documentation
 
 Some of binutils sub-directories in turn have doc sub-directories.  The
 documentation is written in texinfo, from which documents can be
@@ -478,30 +483,29 @@ documentation, change to the individual documentation directory and
 use make HTML, make PDF, make ps or make info as required.  The main
 documents of interest are:
 
+```
    . bfd/doc/bfd.texinfo         This is the BFD manual.
    . binutils/doc/binutils.texi  This is the main Binutils user guide.
-   . ld/ld.texinfo               This is the linker user guide. 
+   . ld/ld.texinfo               This is the linker user guide.
    . gas/doc/as.texinfo          This is the assembler user guide.
+```
 
 The exception to automatic building is with make install. This will
 build info files for any documents in the binutils/doc directory and
 install them in the info sub-directory of the install directory.
 
 
-Chapter 5. About author:
+## Chapter 5. About author:
+
 Author of this article has experience with GNU tools porting to
 different  RISC/DSP processors and currently maintainer for National
 semiconductors 32-bit and 16-bit processor of Binutils and GDB
 simulator ports. Contact  e-mail id: MR.Swami.Reddy@nsc.com for
 further comments/suggestions.
------------------------------------------------------------------------------
-============================================================================
-Activity Log (latest on top):
-----------------------------------------------------------------------------
- Date        Doc version   Description
-----------------------------------------------------------------------------
-01 Dec 2009    1.1         Included  GPL copyrights info and added the
-                           activity base log information.
 
-03 Nov 2009    1.0         Submitted for review on binutils mailing list.
-----------------------------------------------------------------------------
+
+**Activity Log (latest on top):**
+|     Date    | Doc version |                                Description                               |
+|:-----------:|:-----------:|:------------------------------------------------------------------------:|
+| 01 Dec 2009 |     1.1     | Included GPL copyrights info and added the activity base log information |
+| 03 Nov 2009 |     1.0     |               ubmitted for review on binutils mailing list.              |
